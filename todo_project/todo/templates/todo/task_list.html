@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список задач</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .task-item {
+            margin-bottom: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .task-item:hover {
+            background-color: #e9ecef;
+        }
+        .task-list {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .task-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .task-title .task-icon {
+            margin-left: 10px;
+            color: #28a745;
+        }
+        .task-actions {
+            display: flex;
+            align-items: center;
+        }
+        .task-actions .form-check {
+            margin-right: 10px;
+        }
+        .task-actions .form-check-label {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .task-actions .form-check-label.completed {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .task-actions .form-check-label.not-completed {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .delete-task {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .delete-task:hover {
+            color: #c82333;
+        }
+        .task-created-at {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .complete-task {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .complete-task.completed {
+            background-color: #dc3545;
+        }
+        .complete-task:hover {
+            background-color: #218838;
+        }
+        .complete-task.completed:hover {
+            background-color: #c82333;
+        }
+        .edit-task {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: color 0.3s ease;
+        }
+        .edit-task:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Список задач</h1>
+        <div class="mb-4">
+            <form method="GET" class="form-inline">
+                <input type="text" name="search" class="form-control mr-2" placeholder="Поиск по названию" id="searchInput">
+                <button type="submit" class="btn btn-primary">Поиск</button>
+            </form>
+            <div class="mt-2">
+                <a href="?status=all" class="btn btn-secondary">Все</a>
+                <a href="?status=completed" class="btn btn-success">Выполненные</a>
+                <a href="?status=not_completed" class="btn btn-danger">Не выполненные</a>
+                <div class="mt-2">
+                    <a href="#" class="btn btn-outline-secondary sort-by" data-sort-by="created_at">Сортировать по дате <i class="fas fa-sort"></i></a>
+                    <a href="#" class="btn btn-outline-secondary sort-by" data-sort-by="completed">Сортировать по статусу <i class="fas fa-sort"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="task-list" id="taskList">
+            {% for task in tasks %}
+                <div class="task-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="task-title">
+                            {{ task.title }}
+                            {% if task.completed %}
+                                <i class="fas fa-check task-icon"></i>
+                            {% endif %}
+                        </div>
+                        <div class="task-created-at">Создано: {{ task.created_at|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="complete-task {% if task.completed %}completed{% endif %}" data-task-id="{{ task.id }}">
+                            {% if task.completed %}Не выполнено{% else %}Выполнено{% endif %}
+                        </button>
+                        <button class="edit-task" data-task-id="{{ task.id }}"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="delete-task" data-task-id="{{ task.id }}"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4">
+            <!-- Кнопка для открытия модального окна -->
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addTaskModal">
+                Добавить задачу
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления новой задачи -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTaskModalLabel">Добавить новую задачу</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addTaskForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="taskTitle">Заголовок задачи</label>
+                            <input type="text" class="form-control" id="taskTitle" name="title" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-primary" id="addTaskSubmit">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var currentSortBy = 'created_at';
+            var currentSortOrder = 'asc';
+
+            function updateSortIcons() {
+                $('.sort-by').each(function() {
+                    var sortBy = $(this).data('sort-by');
+                    if (sortBy === currentSortBy) {
+                        $(this).find('i').removeClass('fa-sort').addClass(currentSortOrder === 'asc' ? 'fa-sort-up' : 'fa-sort-down');
+                    } else {
+                        $(this).find('i').removeClass('fa-sort-up fa-sort-down').addClass('fa-sort');
+                    }
+                });
+            }
+
+            $('.sort-by').click(function(e) {
+                e.preventDefault();
+                var sortBy = $(this).data('sort-by');
+                if (sortBy === currentSortBy) {
+                    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortBy = sortBy;
+                    currentSortOrder = 'asc';
+                }
+                updateSortIcons();
+                location.href = `?sort_by=${currentSortBy}&sort_order=${currentSortOrder}`;
+            });
+
+            $('#searchInput').on('input', function() {
+                var searchQuery = $(this).val().toLowerCase();
+                $.ajax({
+                    url: '/search/',
+                    method: 'GET',
+                    data: {
+                        'search': searchQuery
+                    },
+                    success: function(response) {
+                        var tasksHtml = '';
+                        response.tasks.forEach(function(task) {
+                            tasksHtml += `
+                                <div class="task-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="task-title">${task.title}
+                                            ${task.completed ? '<i class="fas fa-check task-icon"></i>' : ''}
+                                        </div>
+                                        <div class="task-created-at">Создано: ${task.created_at}</div>
+                                    </div>
+                                    <div class="task-actions">
+                                        <button class="complete-task ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                                            ${task.completed ? 'Не выполнено' : 'Выполнено'}
+                                        </button>
+                                        <button class="edit-task" data-task-id="${task.id}"><i class="fas fa-pencil-alt"></i></button>
+                                        <button class="delete-task" data-task-id="${task.id}"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        $('#taskList').html(tasksHtml);
+                    }
+                });
+            });
+
+            $('.complete-task').click(function() {
+                var taskId = $(this).data('task-id');
+                var completed = $(this).hasClass('completed');
+                $.ajax({
+                    url: '/update/' + taskId + '/',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    data: {
+                        'completed': !completed
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            var label = completed ? 'Выполнено' : 'Не выполнено';
+                            var className = completed ? '' : 'completed';
+                            $(this).text(label).toggleClass('completed');
+
+                            // Обновляем иконку галочки
+                            var taskTitle = $(this).closest('.task-item').find('.task-title');
+                            if (response.completed) {
+                                taskTitle.append('<i class="fas fa-check task-icon"></i>');
+                            } else {
+                                taskTitle.find('.task-icon').remove();
+                            }
+                        }
+                    }.bind(this)
+                });
+            });
+
+            $('.delete-task').click(function() {
+                var taskId = $(this).data('task-id');
+                if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
+                    $.ajax({
+                        url: '/delete/' + taskId + '/',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                location.reload();
+                            }
+                        }
+                    });
+                }
+            });
+
+            $('.edit-task').click(function() {
+                var taskId = $(this).data('task-id');
+                var taskTitle = $(this).closest('.task-item').find('.task-title');
+                var currentTitle = taskTitle.text().trim();
+
+                var newTitle = prompt('Редактировать задачу', currentTitle);
+                if (newTitle !== null && newTitle.trim() !== '') {
+                    $.ajax({
+                        url: '/edit/' + taskId + '/',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        data: {
+                            'title': newTitle
+                        },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                taskTitle.text(response.title);
+                            }
+                        }
+                    });
+                }
+            });
+
+            $('#addTaskSubmit').click(function() {
+                var taskTitle = $('#taskTitle').val();
+                if (taskTitle.trim() !== '') {
+                    $.ajax({
+                        url: '/create/',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        data: {
+                            'title': taskTitle
+                        },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                // Добавляем новую задачу в список
+                                var newTaskHtml = `
+                                    <div class="task-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="task-title">${response.title}</div>
+                                            <div class="task-created-at">Создано: ${new Date().toLocaleString('ru-RU')}</div>
+                                        </div>
+                                        <div class="task-actions">
+                                            <button class="complete-task" data-task-id="${response.task_id}">Выполнено</button>
+                                            <button class="edit-task" data-task-id="${response.task_id}"><i class="fas fa-pencil-alt"></i></button>
+                                            <button class="delete-task" data-task-id="${response.task_id}"><i class="fas fa-trash-alt"></i></button>
+                                        </div>
+                                    </div>
+                                `;
+                                $('.task-list').append(newTaskHtml);
+                                $('#addTaskModal').modal('hide');
+                                $('#taskTitle').val('');
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
